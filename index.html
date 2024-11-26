@@ -161,6 +161,7 @@
             const totalPoints = currentRoute.length;
 
             if (active == false){
+                active = true;
                 // Place motorbike marker at the starting point
                 motorbikeMarker = new mapboxgl.Marker({ color: 'black' })
                     .setLngLat(currentRoute[0])
@@ -186,6 +187,7 @@
             }, 10); // Adjust interval for speed
             } else {
                 stopTracking();
+                active = false;
             }
         }
 
