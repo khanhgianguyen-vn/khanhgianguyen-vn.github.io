@@ -8,7 +8,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://unpkg.com/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
-    
+
     <style>
         body {
             margin: 0;
@@ -35,7 +35,6 @@
     <div id="controls">
         <p id="distance">Distance Traveled: 0.0 km</p>
         <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
-        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
     </div>
     <div id="map"></div>
     <!-- <div id="distance">Distance Traveled: 0 km</div> -->
@@ -158,32 +157,36 @@
         // Function to start tracking
         function startTracking() {
             let currentIndex = 0;
+            let active = false;
             const totalPoints = currentRoute.length;
 
-            // Place motorbike marker at the starting point
-            motorbikeMarker = new mapboxgl.Marker({ color: 'black' })
-                .setLngLat(currentRoute[0])
-                .addTo(map);
+            if (active == false){
+                // Place motorbike marker at the starting point
+                motorbikeMarker = new mapboxgl.Marker({ color: 'black' })
+                    .setLngLat(currentRoute[0])
+                    .addTo(map);
+                // Animate motorbike along the route
+                trackingInterval = setInterval(() => {
+                    if (currentIndex < totalPoints - 1) {
+                        currentIndex++;
+                        motorbikeMarker.setLngLat(currentRoute[currentIndex]);
 
-            // Animate motorbike along the route
-            trackingInterval = setInterval(() => {
-                if (currentIndex < totalPoints - 1) {
-                    currentIndex++;
-                    motorbikeMarker.setLngLat(currentRoute[currentIndex]);
-
-                    // Calculate traveled distance
-                    const segmentDistance = turf.distance(
-                        turf.point(currentRoute[currentIndex - 1]),
-                        turf.point(currentRoute[currentIndex]),
-                        { units: 'kilometers' }
-                    );
-                    traveledDistance += segmentDistance;
-                    document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
-                } else {
-                    clearInterval(trackingInterval);
-                    alert('Tracking complete!');
-                }
+                        // Calculate traveled distance
+                        const segmentDistance = turf.distance(
+                            turf.point(currentRoute[currentIndex - 1]),
+                            turf.point(currentRoute[currentIndex]),
+                            { units: 'kilometers' }
+                        );
+                        traveledDistance += segmentDistance;
+                        document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
+                    } else {
+                        clearInterval(trackingInterval);
+                        alert('Tracking complete!');
+                    }
             }, 10); // Adjust interval for speed
+            } else {
+                stopTracking();
+            }
         }
 
         // Function to stop tracking
