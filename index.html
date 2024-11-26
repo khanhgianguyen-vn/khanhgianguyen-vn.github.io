@@ -32,11 +32,12 @@
 </head>
 
 <body>
-    <div id="map"></div>
-    <div id="controls">
-        <p id="distance">Distance Traveled: 0.0 km</p>
-        <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
-        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+    <div id="map">
+        <div id="controls">
+            <p id="distance">Distance Traveled: 0.0 km</p>
+            <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
+            <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+        </div>
     </div>
     <!-- <div id="distance">Distance Traveled: 0 km</div> -->
     <script>
@@ -181,7 +182,7 @@
                     document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
                 } else {
                     clearInterval(trackingInterval);
-                    //alert('Tracking complete!');
+                    alert('Tracking complete!');
                 }
             }, 10); // Adjust interval for speed
         }
