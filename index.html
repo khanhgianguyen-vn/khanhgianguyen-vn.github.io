@@ -31,8 +31,13 @@
             border-radius: 5px;
             font-size: 14px;
             font-weight: bold;
+            border: 2px solid black;
+            /* Add border for consistency */
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            /* Ensure it stays on top */
         }
+
 
         #trackButton {
             position: absolute;
@@ -211,24 +216,24 @@
                 ],
                 geometries: 'geojson'
             })
-            .send()
-            .then(response => {
-                const route = response.body.routes[0];
-                if (route) {
-                    currentRoute = route.geometry.coordinates;
-                    // Update route source with the new data
-                    map.getSource('route').setData({
-                        type: 'Feature',
-                        geometry: {
-                            type: 'LineString',
-                            coordinates: currentRoute
-                        }
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error fetching route:', error);
-            });
+                .send()
+                .then(response => {
+                    const route = response.body.routes[0];
+                    if (route) {
+                        currentRoute = route.geometry.coordinates;
+                        // Update route source with the new data
+                        map.getSource('route').setData({
+                            type: 'Feature',
+                            geometry: {
+                                type: 'LineString',
+                                coordinates: currentRoute
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching route:', error);
+                });
         }
 
         // Function to toggle tracking state
@@ -281,7 +286,7 @@
 
                     // Show feedback in the UI
                     showFeedback(`Trip completed. Total Distance: ${traveledDistance.toFixed(1)} km`);
-                    
+
                     // Reset for future trips
                     document.getElementById('trackButton').innerText = 'Track';
                     isTracking = false;
