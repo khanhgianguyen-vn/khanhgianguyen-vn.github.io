@@ -122,16 +122,47 @@
                 });
         }
 
-        // Function to set current position as the starting point
-        navigator.geolocation.getCurrentPosition(position => {
-            const { longitude, latitude } = position.coords;
-            const userLocation = [longitude, latitude];
-            map.setCenter(userLocation);
-            map.setZoom(14);
+        // // Function to set current position as the starting point
+        // navigator.geolocation.getCurrentPosition(position => {
+        //     const { longitude, latitude } = position.coords;
+        //     const userLocation = [longitude, latitude];
+        //     map.setCenter(userLocation);
+        //     map.setZoom(14);
 
-            // Add start marker
-            startMarker = addMarker(userLocation, true);
-        }, () => alert('Could not fetch location.'));
+        //     // Add start marker
+        //     startMarker = addMarker(userLocation, true);
+        // }, () => alert('Could not fetch location.'));
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const { latitude, longitude } = position.coords;
+                const userLocation = [longitude, latitude];
+
+                // Center map on user's location
+                map.setCenter(userLocation);
+                map.setZoom(14);
+
+                // Add a marker at the user's location
+                startMarker = addMarker(userLocation, true);
+            },
+            (error) => {
+                // Handle errors
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        alert('Location access denied. Please enable location permissions.');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        alert('Location information is unavailable.');
+                        break;
+                    case error.TIMEOUT:
+                        alert('Location request timed out. Please try again.');
+                        break;
+                    default:
+                        alert('An unknown error occurred.');
+                        break;
+                }
+            }
+        );
+
     </script>
 </body>
 
