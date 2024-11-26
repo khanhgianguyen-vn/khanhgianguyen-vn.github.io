@@ -74,29 +74,27 @@
             zoom: 14
         });
 
-        let startMarker = null;       // Starting point
-        let endMarker = null;         // Destination marker
-        let motorbikeMarker = null;   // Motorbike marker
-        let trackingInterval = null;  // Interval for motorbike animation
-        let currentRoute = [];        // Current route coordinates
-        let traveledDistance = 0;     // Distance covered during tracking
-        let isTracking = false;       // Tracking state
-
-        // Add a start marker (current location)
-        const userLocation = [105.8007, 21.0285];
-        startMarker = new mapboxgl.Marker({ color: 'blue' })
-            .setLngLat(userLocation)
-            .addTo(map);
+        let startMarker = new mapboxgl.Marker({ color: 'blue' }).setLngLat([105.8007, 21.0285]).addTo(map);
+        let endMarker = null;         
+        let motorbikeMarker = null;   
+        let trackingInterval = null;  
+        let currentRoute = [];        
+        let traveledDistance = 0;     
+        let isTracking = false;       
 
         // Handle map click to drop a destination pin
         map.on('click', (e) => {
             const { lng, lat } = e.lngLat;
 
-            // Reset tracking variables
-            traveledDistance = 0;
-            currentRoute = [];
+            // If tracking, set userLocation to the motorbike's current position
+            const userLocation = isTracking ? motorbikeMarker.getLngLat().toArray() : [105.8007, 21.0285];
+
             clearInterval(trackingInterval);
+            
+            // Remove existing motorbike marker if present
             if (motorbikeMarker) motorbikeMarker.remove();
+
+            // Reset route data whenever a new destination is set
             if (map.getSource('route')) {
                 map.getSource('route').setData({
                     type: 'FeatureCollection',
@@ -108,12 +106,10 @@
             if (endMarker) {
                 endMarker.setLngLat([lng, lat]);
             } else {
-                endMarker = new mapboxgl.Marker({ color: 'red' })
-                    .setLngLat([lng, lat])
-                    .addTo(map);
+                endMarker = new mapboxgl.Marker({ color: 'red' }).setLngLat([lng, lat]).addTo(map);
             }
 
-            // Fetch the route
+            // Fetch the route using the updated userLocation
             getRoute(userLocation, [lng, lat]);
 
             // Reset distance display and show the "Track" button
@@ -138,10 +134,9 @@
                 .send()
                 .then(response => {
                     const route = response.body.routes[0];
-                    currentRoute = route.geometry.coordinates; // Save route for animation
-                    const distance = (route.distance / 1000).toFixed(1); // Convert meters to km, 1 decimal place
-
-                    // Add or update the route source
+                    currentRoute = route.geometry.coordinates;
+                    
+                    // Update route source
                     if (map.getSource('route')) {
                         map.getSource('route').setData({
                             type: 'Feature',
@@ -195,16 +190,14 @@
             let currentIndex = 0;
             const totalPoints = currentRoute.length;
 
-            // Add a custom motorcycle marker
+            // Create a motorbike marker
             const motorbikeElement = document.createElement('div');
             motorbikeElement.style.backgroundImage = "url('https://cdn-icons-png.flaticon.com/512/1768/1768214.png')";
             motorbikeElement.style.backgroundSize = 'contain';
             motorbikeElement.style.width = '30px';
             motorbikeElement.style.height = '30px';
 
-            motorbikeMarker = new mapboxgl.Marker(motorbikeElement)
-                .setLngLat(currentRoute[0])
-                .addTo(map);
+            motorbikeMarker = new mapboxgl.Marker(motorbikeElement).setLngLat(currentRoute[0]).addTo(map);
 
             // Animate the motorbike along the route
             trackingInterval = setInterval(() => {
@@ -230,7 +223,7 @@
                     document.getElementById('trackButton').innerText = 'Track';
                     isTracking = false;
                 }
-            }, 100); // Adjust interval for speed
+            }, 100);
         }
 
         // Function to stop tracking
@@ -238,11 +231,9 @@
             isTracking = false;
             clearInterval(trackingInterval);
 
-            // Move blue marker to the current motorbike position
-            if (currentRoute.length > 0) {
-                const lastPosition = currentRoute[currentRoute.length - 1];
-                startMarker.setLngLat(lastPosition);
-            }
+            // Update the blue marker to the current motorbike position
+            const lastPosition = motorbikeMarker.getLngLat();
+            startMarker.setLngLat(lastPosition);
 
             alert(`Tracking stopped. Total Distance Traveled: ${traveledDistance.toFixed(1)} km`);
             document.getElementById('trackButton').innerText = 'Track';
