@@ -8,11 +8,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://unpkg.com/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
-    <div id="controls">
-        <p id="distance">Distance Traveled: 0.0 km</p>
-        <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
-        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
-    </div>
+    
     <style>
         body {
             margin: 0;
@@ -37,7 +33,12 @@
 
 <body>
     <div id="map"></div>
-    <div id="distance">Distance Traveled: 0 km</div>
+    <!-- <div id="distance">Distance Traveled: 0 km</div> -->
+    <div id="controls">
+        <p id="distance">Distance Traveled: 0.0 km</p>
+        <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
+        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+    </div>
     <script>
         mapboxgl.accessToken = 'pk.eyJ1Ijoia2hhbmhuZ2djaDIyMTA2MCIsImEiOiJjbTN5aXhjNTIxbWlkMmtzNzdsMzR6ZWRtIn0.c_sV6VMptNdPQgs_UAOeAw';
 
