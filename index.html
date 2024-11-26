@@ -197,12 +197,12 @@
             // Fetch the route using the updated userLocation
             getRoute(userLocation, [lng, lat]);
 
-            // Reset distance display and show the "Track" button
-            // document.getElementById('distance').innerText = `Distance Traveled: 0.0 km`;
+            // Show the "Track" button
             document.getElementById('trackButton').style.display = 'block';
             document.getElementById('trackButton').innerText = 'Track';
             isTracking = false;
         });
+
 
         // Function to fetch and display the route
         function getRoute(start, end) {
@@ -275,7 +275,7 @@
                         turf.point(currentRoute[currentIndex]),
                         { units: 'kilometers' }
                     );
-                    traveledDistance += segmentDistance;
+                    traveledDistance += segmentDistance; // Accumulate distance
                     document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
                 } else {
                     clearInterval(trackingInterval);
@@ -293,7 +293,6 @@
                 }
             }, 100);
         }
-
 
         // Function to stop tracking
         function stopTracking() {
