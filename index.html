@@ -222,6 +222,10 @@
                     document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
                 } else {
                     clearInterval(trackingInterval);
+
+                    // Move blue marker to the final motorbike position
+                    startMarker.setLngLat(currentRoute[currentIndex]);
+
                     alert('Tracking complete!');
                     document.getElementById('trackButton').innerText = 'Track';
                     isTracking = false;
@@ -233,6 +237,13 @@
         function stopTracking() {
             isTracking = false;
             clearInterval(trackingInterval);
+
+            // Move blue marker to the current motorbike position
+            if (currentRoute.length > 0) {
+                const lastPosition = currentRoute[currentRoute.length - 1];
+                startMarker.setLngLat(lastPosition);
+            }
+
             alert(`Tracking stopped. Total Distance Traveled: ${traveledDistance.toFixed(1)} km`);
             document.getElementById('trackButton').innerText = 'Track';
         }
