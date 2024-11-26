@@ -36,48 +36,54 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1Ijoia2hhbmhuZ2djaDIyMTA2MCIsImEiOiJjbTN5aXhjNTIxbWlkMmtzNzdsMzR6ZWRtIn0.c_sV6VMptNdPQgs_UAOeAw';
 
-        // Initialize map
+        // Initialize the map
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [0, 0], // Initial center (longitude, latitude)
-            zoom: 2
+            center: [105.8007, 21.0285], // Hardcoded location: Greenwich Vietnam, Hanoi
+            zoom: 14
         });
-
-        const directionsClient = mapboxSdk({ accessToken: mapboxgl.accessToken }).directions;
 
         let startMarker = null; // Starting point
         let endMarker = null;   // Dropped pin
         let routeLine = null;   // Route line
         let distanceTraveled = 0; // Distance in km
 
-        // Function to add a marker
-        function addMarker(lngLat, isStart = false) {
-            return new mapboxgl.Marker({ color: isStart ? 'blue' : 'red' })
-                .setLngLat(lngLat)
-                .addTo(map);
-        }
+        // Hardcoded location: Greenwich Vietnam, Hanoi
+        const userLocation = [105.8007, 21.0285]; // [longitude, latitude]
 
-        // Click event to drop a pin
+        // Center map and add start marker
+        map.setCenter(userLocation);
+        map.setZoom(14);
+
+        // Add a marker at the hardcoded location
+        startMarker = new mapboxgl.Marker({ color: 'blue' })
+            .setLngLat(userLocation)
+            .addTo(map);
+
+        // Add a click event to drop a destination pin and calculate route
         map.on('click', (e) => {
             const { lng, lat } = e.lngLat;
 
             // Add or move end marker
             if (endMarker) endMarker.setLngLat([lng, lat]);
-            else endMarker = addMarker([lng, lat]);
+            else endMarker = new mapboxgl.Marker({ color: 'red' })
+                .setLngLat([lng, lat])
+                .addTo(map);
 
-            if (startMarker) {
-                getRoute(startMarker.getLngLat(), endMarker.getLngLat());
-            }
+            // Fetch and display the route
+            getRoute(userLocation, [lng, lat]);
         });
 
         // Function to fetch and display the route
         function getRoute(start, end) {
+            const directionsClient = mapboxSdk({ accessToken: mapboxgl.accessToken }).directions;
+
             directionsClient.getDirections({
                 profile: 'driving',
                 waypoints: [
-                    { coordinates: [start.lng, start.lat] },
-                    { coordinates: [end.lng, end.lat] }
+                    { coordinates: start },
+                    { coordinates: end }
                 ],
                 geometries: 'geojson'
             })
@@ -91,7 +97,7 @@
                     distanceTraveled += parseFloat(distance);
                     document.getElementById('distance').innerText = `Distance Traveled: ${distanceTraveled} km`;
 
-                    // Remove existing route line
+                    // Remove existing route line if any
                     if (routeLine) {
                         map.getSource('route').setData({
                             type: 'FeatureCollection',
@@ -121,48 +127,6 @@
                     });
                 });
         }
-
-        // // Function to set current position as the starting point
-        // navigator.geolocation.getCurrentPosition(position => {
-        //     const { longitude, latitude } = position.coords;
-        //     const userLocation = [longitude, latitude];
-        //     map.setCenter(userLocation);
-        //     map.setZoom(14);
-
-        //     // Add start marker
-        //     startMarker = addMarker(userLocation, true);
-        // }, () => alert('Could not fetch location.'));
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                const userLocation = [longitude, latitude];
-
-                // Center map on user's location
-                map.setCenter(userLocation);
-                map.setZoom(14);
-
-                // Add a marker at the user's location
-                startMarker = addMarker(userLocation, true);
-            },
-            (error) => {
-                // Handle errors
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        alert('Location access denied. Please enable location permissions.');
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        alert('Location information is unavailable.');
-                        break;
-                    case error.TIMEOUT:
-                        alert('Location request timed out. Please try again.');
-                        break;
-                    default:
-                        alert('An unknown error occurred.');
-                        break;
-                }
-            }
-        );
-
     </script>
 </body>
 
