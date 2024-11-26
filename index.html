@@ -51,16 +51,38 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        #trackButton:hover {
-            background-color: #f0f0f0;
+        #searchBox {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 200px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 2px solid black;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        #tripFeedback {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            border: 2px solid black;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
 
 <body>
     <div id="map">
+        <input type="text" id="searchBox" placeholder="Search Location..." />
+        <button id="searchButton" onclick="searchLocation()">Search</button>
         <div id="distance">Distance Traveled: 0.0 km</div>
         <button id="trackButton" style="display: none;" onclick="toggleTracking()">Track</button>
+        <div id="tripFeedback" style="display: none;"></div>
     </div>
 
     <script>
@@ -75,12 +97,48 @@
         });
 
         let startMarker = new mapboxgl.Marker({ color: 'blue' }).setLngLat([105.8007, 21.0285]).addTo(map);
-        let endMarker = null;         
-        let motorbikeMarker = null;   
-        let trackingInterval = null;  
-        let currentRoute = [];        
-        let traveledDistance = 0;     
-        let isTracking = false;       
+        let endMarker = null;
+        let motorbikeMarker = null;
+        let trackingInterval = null;
+        let currentRoute = [];
+        let traveledDistance = 0;
+        let isTracking = false;
+
+        // Function to search for a location
+        function searchLocation() {
+            const searchQuery = document.getElementById('searchBox').value;
+            const geocodingClient = mapboxSdk({ accessToken: mapboxgl.accessToken }).geocoding;
+
+            geocodingClient
+                .forwardGeocode({
+                    query: searchQuery,
+                    limit: 1
+                })
+                .send()
+                .then(response => {
+                    const match = response.body.features[0];
+                    if (match) {
+                        const lng = match.geometry.coordinates[0];
+                        const lat = match.geometry.coordinates[1];
+
+                        // Set map view
+                        map.setCenter([lng, lat]);
+                        map.setZoom(14);
+
+                        // Add a marker at the searched location
+                        if (endMarker) {
+                            endMarker.setLngLat([lng, lat]);
+                        } else {
+                            endMarker = new mapboxgl.Marker({ color: 'red' }).setLngLat([lng, lat]).addTo(map);
+                        }
+                    } else {
+                        showFeedback('Location not found.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching location:', error);
+                });
+        }
 
         // Handle map click to drop a destination pin
         map.on('click', (e) => {
@@ -153,24 +211,24 @@
                 ],
                 geometries: 'geojson'
             })
-                .send()
-                .then(response => {
-                    const route = response.body.routes[0];
-                    if (route) {
-                        currentRoute = route.geometry.coordinates;
-                        // Update route source with the new data
-                        map.getSource('route').setData({
-                            type: 'Feature',
-                            geometry: {
-                                type: 'LineString',
-                                coordinates: currentRoute
-                            }
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching route:', error);
-                });
+            .send()
+            .then(response => {
+                const route = response.body.routes[0];
+                if (route) {
+                    currentRoute = route.geometry.coordinates;
+                    // Update route source with the new data
+                    map.getSource('route').setData({
+                        type: 'Feature',
+                        geometry: {
+                            type: 'LineString',
+                            coordinates: currentRoute
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching route:', error);
+            });
         }
 
         // Function to toggle tracking state
@@ -218,7 +276,13 @@
                     clearInterval(trackingInterval);
                     startMarker.setLngLat(currentRoute[currentIndex]);
 
-                    alert('Tracking complete!');
+                    // Save trip details to local storage
+                    saveTrip(traveledDistance);
+
+                    // Show feedback in the UI
+                    showFeedback(`Trip completed. Total Distance: ${traveledDistance.toFixed(1)} km`);
+                    
+                    // Reset for future trips
                     document.getElementById('trackButton').innerText = 'Track';
                     isTracking = false;
                 }
@@ -236,8 +300,32 @@
                 startMarker.setLngLat(lastPosition);
             }
 
-            alert(`Tracking stopped. Total Distance Traveled: ${traveledDistance.toFixed(1)} km`);
+            // Show feedback in the UI
+            showFeedback(`Tracking stopped. Total Distance: ${traveledDistance.toFixed(1)} km`);
             document.getElementById('trackButton').innerText = 'Track';
+        }
+
+        // Function to save trip details to local storage
+        function saveTrip(distance) {
+            const trips = JSON.parse(localStorage.getItem('trips')) || [];
+            const trip = {
+                date: new Date().toISOString(),
+                distance: distance.toFixed(1) // Store distance with one decimal place
+            };
+            trips.push(trip);
+            localStorage.setItem('trips', JSON.stringify(trips));
+        }
+
+        // Function to show feedback messages in the UI
+        function showFeedback(message) {
+            const feedbackElement = document.getElementById('tripFeedback');
+            feedbackElement.innerText = message;
+            feedbackElement.style.display = 'block';
+
+            // Hide feedback after 5 seconds
+            setTimeout(() => {
+                feedbackElement.style.display = 'none';
+            }, 5000);
         }
     </script>
 </body>
