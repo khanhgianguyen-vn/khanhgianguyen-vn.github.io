@@ -86,19 +86,41 @@
         map.on('click', (e) => {
             const { lng, lat } = e.lngLat;
 
-            // If tracking, set userLocation to the motorbike's current position
-            const userLocation = isTracking ? motorbikeMarker.getLngLat().toArray() : [105.8007, 21.0285];
+            // Use the current position of the motorbike marker if it's tracking, else use initial location
+            const userLocation = motorbikeMarker ? motorbikeMarker.getLngLat().toArray() : [105.8007, 21.0285];
 
             clearInterval(trackingInterval);
-            
+
             // Remove existing motorbike marker if present
             if (motorbikeMarker) motorbikeMarker.remove();
 
-            // Reset route data whenever a new destination is set
+            // Reset previous route data
             if (map.getSource('route')) {
                 map.getSource('route').setData({
                     type: 'FeatureCollection',
                     features: []
+                });
+            } else {
+                // Add route source if not already added
+                map.addSource('route', {
+                    type: 'geojson',
+                    data: {
+                        type: 'FeatureCollection',
+                        features: []
+                    }
+                });
+                map.addLayer({
+                    id: 'route',
+                    type: 'line',
+                    source: 'route',
+                    layout: {
+                        'line-join': 'round',
+                        'line-cap': 'round'
+                    },
+                    paint: {
+                        'line-color': '#3887be',
+                        'line-width': 5
+                    }
                 });
             }
 
@@ -134,39 +156,14 @@
                 .send()
                 .then(response => {
                     const route = response.body.routes[0];
-                    currentRoute = route.geometry.coordinates;
-                    
-                    // Update route source or create it if it doesn't exist
-                    if (map.getSource('route')) {
+                    if (route) {
+                        currentRoute = route.geometry.coordinates;
+                        // Update route source with the new data
                         map.getSource('route').setData({
                             type: 'Feature',
                             geometry: {
                                 type: 'LineString',
                                 coordinates: currentRoute
-                            }
-                        });
-                    } else {
-                        map.addSource('route', {
-                            type: 'geojson',
-                            data: {
-                                type: 'Feature',
-                                geometry: {
-                                    type: 'LineString',
-                                    coordinates: currentRoute
-                                }
-                            }
-                        });
-                        map.addLayer({
-                            id: 'route',
-                            type: 'line',
-                            source: 'route',
-                            layout: {
-                                'line-join': 'round',
-                                'line-cap': 'round'
-                            },
-                            paint: {
-                                'line-color': '#3887be',
-                                'line-width': 5
                             }
                         });
                     }
@@ -200,7 +197,8 @@
             motorbikeElement.style.width = '30px';
             motorbikeElement.style.height = '30px';
 
-            motorbikeMarker = new mapboxgl.Marker(motorbikeElement).setLngLat(currentRoute[0]).addTo(map);
+            // Set initial position for the motorbike
+            motorbikeMarker = new mapboxgl.Marker(motorbikeElement).setLngLat(currentRoute[currentIndex]).addTo(map);
 
             // Animate the motorbike along the route
             trackingInterval = setInterval(() => {
@@ -218,8 +216,6 @@
                     document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
                 } else {
                     clearInterval(trackingInterval);
-
-                    // Move blue marker to the final motorbike position
                     startMarker.setLngLat(currentRoute[currentIndex]);
 
                     alert('Tracking complete!');
@@ -234,7 +230,7 @@
             isTracking = false;
             clearInterval(trackingInterval);
 
-            // Update the blue marker to the current motorbike position
+            // Move the blue marker to the latest motorbike position
             if (motorbikeMarker) {
                 const lastPosition = motorbikeMarker.getLngLat();
                 startMarker.setLngLat(lastPosition);
