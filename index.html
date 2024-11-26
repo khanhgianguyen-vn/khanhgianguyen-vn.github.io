@@ -145,7 +145,6 @@
                 });
         }
 
-        // Handle map click to drop a destination pin
         map.on('click', (e) => {
             const { lng, lat } = e.lngLat;
 
@@ -197,11 +196,14 @@
             // Fetch the route using the updated userLocation
             getRoute(userLocation, [lng, lat]);
 
-            // Show the "Track" button
+            // **Remove this line if present**:
+            // document.getElementById('distance').innerText = `Distance Traveled: 0.0 km`;
+
             document.getElementById('trackButton').style.display = 'block';
             document.getElementById('trackButton').innerText = 'Track';
             isTracking = false;
         });
+
 
 
         // Function to fetch and display the route
