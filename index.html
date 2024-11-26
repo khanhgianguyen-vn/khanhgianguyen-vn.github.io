@@ -22,43 +22,45 @@
             position: relative;
         }
 
-        #controls {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            z-index: 1;
-        }
-
         #distance {
+            position: absolute;
+            top: 10px;
+            left: 10px;
             background: white;
             padding: 10px;
             border-radius: 5px;
-            margin-bottom: 5px;
             font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         #trackButton {
-            background-color: #0078a8;
-            color: white;
-            border: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1;
+            background-color: white;
+            color: black;
+            font-weight: bold;
+            border: 2px solid black;
             padding: 10px 20px;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         #trackButton:hover {
-            background-color: #005f7a;
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 
 <body>
     <div id="map">
-        <div id="controls">
-            <p id="distance">Distance Traveled: 0.0 km</p>
-            <button id="trackButton" style="display: none;" onclick="toggleTracking()">Track</button>
-        </div>
+        <div id="distance">Distance Traveled: 0.0 km</div>
+        <button id="trackButton" style="display: none;" onclick="toggleTracking()">Track</button>
     </div>
 
     <script>
