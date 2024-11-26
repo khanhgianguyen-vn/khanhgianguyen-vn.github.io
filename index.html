@@ -8,6 +8,11 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://unpkg.com/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
+    <div id="controls">
+        <p id="distance">Distance Traveled: 0.0 km</p>
+        <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
+        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+    </div>
     <style>
         body {
             margin: 0;
@@ -40,39 +45,57 @@
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [105.8007, 21.0285], // Hardcoded location: Greenwich Vietnam, Hanoi
+            center: [105.8007, 21.0285], // Greenwich Vietnam, Hanoi
             zoom: 14
         });
 
-        let startMarker = null; // Starting point
-        let endMarker = null;   // Dropped pin
-        let routeLine = null;   // Route line
-        let distanceTraveled = 0; // Distance in km
+        let startMarker = null;       // Starting point
+        let endMarker = null;         // Dropped pin
+        let routeLine = null;         // Route line
+        let motorbikeMarker = null;   // Motorbike symbol
+        let distanceTraveled = 0;     // Distance in km
+        let trackingInterval = null;  // Interval for motorbike animation
+        let currentRoute = [];        // Current route coordinates
+        let traveledDistance = 0;     // Distance covered during tracking
 
-        // Hardcoded location: Greenwich Vietnam, Hanoi
-        const userLocation = [105.8007, 21.0285]; // [longitude, latitude]
-
-        // Center map and add start marker
-        map.setCenter(userLocation);
-        map.setZoom(14);
-
-        // Add a marker at the hardcoded location
+        // Add a start marker (current location)
+        const userLocation = [105.8007, 21.0285];
         startMarker = new mapboxgl.Marker({ color: 'blue' })
             .setLngLat(userLocation)
             .addTo(map);
 
-        // Add a click event to drop a destination pin and calculate route
+        // Reset distance and handle map click to drop a pin
         map.on('click', (e) => {
             const { lng, lat } = e.lngLat;
 
-            // Add or move end marker
-            if (endMarker) endMarker.setLngLat([lng, lat]);
-            else endMarker = new mapboxgl.Marker({ color: 'red' })
-                .setLngLat([lng, lat])
-                .addTo(map);
+            // Reset distance and remove previous route/motorbike
+            distanceTraveled = 0;
+            traveledDistance = 0;
+            currentRoute = [];
+            clearInterval(trackingInterval);
+            if (motorbikeMarker) motorbikeMarker.remove();
+            if (map.getSource('route')) {
+                map.getSource('route').setData({
+                    type: 'FeatureCollection',
+                    features: []
+                });
+            }
 
-            // Fetch and display the route
+            // Add or move the end marker
+            if (endMarker) {
+                endMarker.setLngLat([lng, lat]);
+            } else {
+                endMarker = new mapboxgl.Marker({ color: 'red' })
+                    .setLngLat([lng, lat])
+                    .addTo(map);
+            }
+
+            // Fetch the route
             getRoute(userLocation, [lng, lat]);
+
+            // Reset distance display and show "Track" button
+            document.getElementById('distance').innerText = `Distance Traveled: 0.0 km`;
+            document.getElementById('trackButton').style.display = 'block';
         });
 
         // Function to fetch and display the route
@@ -90,36 +113,30 @@
                 .send()
                 .then(response => {
                     const route = response.body.routes[0];
-                    const coordinates = route.geometry.coordinates;
-                    const distance = (route.distance / 1000).toFixed(2); // Convert meters to km
+                    currentRoute = route.geometry.coordinates; // Save route for animation
+                    const distance = (route.distance / 1000).toFixed(1); // Convert meters to km, 1 decimal place
+                    distanceTraveled = parseFloat(distance);
 
-                    // Update distance traveled
-                    distanceTraveled += parseFloat(distance);
-                    document.getElementById('distance').innerText = `Distance Traveled: ${distanceTraveled} km`;
-
-                    // Check if the route source already exists
+                    // Add or update route source
                     if (map.getSource('route')) {
-                        // Update the route data
                         map.getSource('route').setData({
                             type: 'Feature',
                             geometry: {
                                 type: 'LineString',
-                                coordinates: coordinates
+                                coordinates: currentRoute
                             }
                         });
                     } else {
-                        // Add the route source and layer
                         map.addSource('route', {
                             type: 'geojson',
                             data: {
                                 type: 'Feature',
                                 geometry: {
                                     type: 'LineString',
-                                    coordinates: coordinates
+                                    coordinates: currentRoute
                                 }
                             }
                         });
-
                         map.addLayer({
                             id: 'route',
                             type: 'line',
@@ -134,10 +151,44 @@
                             }
                         });
                     }
-                })
-                .catch(error => {
-                    console.error('Error fetching route:', error);
                 });
+        }
+
+        // Function to start tracking
+        function startTracking() {
+            let currentIndex = 0;
+            const totalPoints = currentRoute.length;
+
+            // Place motorbike marker at the starting point
+            motorbikeMarker = new mapboxgl.Marker({ color: 'black' })
+                .setLngLat(currentRoute[0])
+                .addTo(map);
+
+            // Animate motorbike along the route
+            trackingInterval = setInterval(() => {
+                if (currentIndex < totalPoints - 1) {
+                    currentIndex++;
+                    motorbikeMarker.setLngLat(currentRoute[currentIndex]);
+
+                    // Calculate traveled distance
+                    const segmentDistance = turf.distance(
+                        turf.point(currentRoute[currentIndex - 1]),
+                        turf.point(currentRoute[currentIndex]),
+                        { units: 'kilometers' }
+                    );
+                    traveledDistance += segmentDistance;
+                    document.getElementById('distance').innerText = `Distance Traveled: ${traveledDistance.toFixed(1)} km`;
+                } else {
+                    clearInterval(trackingInterval);
+                    alert('Tracking complete!');
+                }
+            }, 1000); // Adjust interval for speed
+        }
+
+        // Function to stop tracking
+        function stopTracking() {
+            clearInterval(trackingInterval);
+            alert(`Tracking stopped. Total Distance Traveled: ${traveledDistance.toFixed(1)} km`);
         }
     </script>
 </body>
