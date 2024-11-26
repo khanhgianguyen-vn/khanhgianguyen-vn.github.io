@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoNav</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/@mapbox/mapbox-sdk/umd/mapbox-sdk.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+
+        #distance {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="distance">Distance Traveled: 0 km</div>
+    <script>
+        mapboxgl.accessToken = 'YOUR_MAPBOX_ACCESS_TOKEN';
+
+        // Initialize map
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [0, 0], // Initial center (longitude, latitude)
+            zoom: 2
+        });
+
+        const directionsClient = mapboxSdk({ accessToken: mapboxgl.accessToken }).directions;
+
+        let startMarker = null; // Starting point
+        let endMarker = null;   // Dropped pin
+        let routeLine = null;   // Route line
+        let distanceTraveled = 0; // Distance in km
+
+        // Function to add a marker
+        function addMarker(lngLat, isStart = false) {
+            return new mapboxgl.Marker({ color: isStart ? 'blue' : 'red' })
+                .setLngLat(lngLat)
+                .addTo(map);
+        }
+
+        // Click event to drop a pin
+        map.on('click', (e) => {
+            const { lng, lat } = e.lngLat;
+
+            // Add or move end marker
+            if (endMarker) endMarker.setLngLat([lng, lat]);
+            else endMarker = addMarker([lng, lat]);
+
+            if (startMarker) {
+                getRoute(startMarker.getLngLat(), endMarker.getLngLat());
+            }
+        });
+
+        // Function to fetch and display the route
+        function getRoute(start, end) {
+            directionsClient.getDirections({
+                profile: 'driving',
+                waypoints: [
+                    { coordinates: [start.lng, start.lat] },
+                    { coordinates: [end.lng, end.lat] }
+                ],
+                geometries: 'geojson'
+            })
+                .send()
+                .then(response => {
+                    const route = response.body.routes[0];
+                    const coordinates = route.geometry.coordinates;
+                    const distance = (route.distance / 1000).toFixed(2); // Convert meters to km
+
+                    // Update distance traveled
+                    distanceTraveled += parseFloat(distance);
+                    document.getElementById('distance').innerText = `Distance Traveled: ${distanceTraveled} km`;
+
+                    // Remove existing route line
+                    if (routeLine) {
+                        map.getSource('route').setData({
+                            type: 'FeatureCollection',
+                            features: []
+                        });
+                    } else {
+                        map.addSource('route', {
+                            type: 'geojson',
+                            data: {
+                                type: 'FeatureCollection',
+                                features: []
+                            }
+                        });
+                        map.addLayer({
+                            id: 'route',
+                            type: 'line',
+                            source: 'route',
+                            layout: { 'line-join': 'round', 'line-cap': 'round' },
+                            paint: { 'line-color': '#3887be', 'line-width': 5 }
+                        });
+                    }
+
+                    // Add route to map
+                    map.getSource('route').setData({
+                        type: 'Feature',
+                        geometry: { type: 'LineString', coordinates }
+                    });
+                });
+        }
+
+        // Function to set current position as the starting point
+        navigator.geolocation.getCurrentPosition(position => {
+            const { longitude, latitude } = position.coords;
+            const userLocation = [longitude, latitude];
+            map.setCenter(userLocation);
+            map.setZoom(14);
+
+            // Add start marker
+            startMarker = addMarker(userLocation, true);
+        }, () => alert('Could not fetch location.'));
+    </script>
+</body>
+
+</html>
