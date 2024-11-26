@@ -32,13 +32,14 @@
 </head>
 
 <body>
-    <div id="map"></div>
-    <!-- <div id="distance">Distance Traveled: 0 km</div> -->
-    <div id="controls">
-        <p id="distance">Distance Traveled: 0.0 km</p>
-        <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
-        <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+    <div id="map">
+        <div id="controls">
+            <p id="distance">Distance Traveled: 0.0 km</p>
+            <button id="trackButton" style="display: none;" onclick="startTracking()">Track</button>
+            <button id="stopButton" onclick="stopTracking()">Stop Tracking</button>
+        </div>
     </div>
+    <!-- <div id="distance">Distance Traveled: 0 km</div> -->
     <script>
         mapboxgl.accessToken = 'pk.eyJ1Ijoia2hhbmhuZ2djaDIyMTA2MCIsImEiOiJjbTN5aXhjNTIxbWlkMmtzNzdsMzR6ZWRtIn0.c_sV6VMptNdPQgs_UAOeAw';
 
